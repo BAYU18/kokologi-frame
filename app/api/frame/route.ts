@@ -177,16 +177,17 @@ export async function POST(req: Request) {
 // =======================
 function questionFrame(state: any) {
   const q = QUESTIONS[state.step];
+  const BASE_URL = "https://kokologi-frame1.vercel.app";
 
   return htmlFrame(`
-    <meta property="fc:frame:image" content="http://localhost:3001/api/og?step=${state.step}" />
+   <meta property="fc:frame:image" content="${BASE_URL}/api/og?step=${state.step}" />
     ${q.options
       .map(
         (o: any, i: number) =>
           `<meta property="fc:frame:button:${i + 1}" content="${o.label}" />`
       )
       .join("")}
-    <meta property="fc:frame:state" content='${JSON.stringify(state)}' />
+    <meta property="fc:frame:post_url" content="${BASE_URL}/api/frame" />
   `);
 }
 
@@ -195,9 +196,10 @@ function questionFrame(state: any) {
 // =======================
 function resultFrame(state: any) {
   const result = getFinalColor(state.score);
-
+  const BASE_URL = "https://kokologi-frame1.vercel.app";
   return htmlFrame(`
-    <meta property="fc:frame:image" content="http://localhost:3001/api/og?result=${result.color}" />
+    <meta property="fc:frame:image" content="${BASE_URL}/api/og?result=${result.color}" />
+
   `);
 }
 
@@ -208,7 +210,7 @@ function htmlFrame(inner: string) {
   return new Response(
     `<!DOCTYPE html><html><head>
       <meta property="fc:frame" content="vNext" />
-      <meta property="fc:frame:post_url" content="http://localhost:3001/api/frame" />
+      <meta property="fc:frame:post_url" content="http://kokologi-frame1.vercel.app/api/frame" />
       ${inner}
     </head></html>`,
     { headers: { "Content-Type": "text/html" } }
