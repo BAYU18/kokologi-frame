@@ -2,8 +2,19 @@ import type { Metadata } from "next";
 import FarcasterReady from "./components/FarcasterReady";
 
 export const metadata: Metadata = {
-  title: "Tes Kokologi",
-  description: "Tes kepribadian berbasis warna (15 soal)",
+  title: "Tes Kokologi Warna",
+  description: "Mini App Farcaster: Tes kepribadian berdasarkan warna",
+  openGraph: {
+    title: "Tes Kokologi Warna",
+    description: "Jawab 15 pertanyaan & temukan warna kepribadianmu",
+    images: [
+      {
+        url: "https://www.kokologi.com/images/logo-kokologi.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+  },
   other: {
     "fc:frame": "vNext",
     "fc:frame:image": "https://kokologi-frame1.vercel.app/api/og",
