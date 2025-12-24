@@ -8,15 +8,15 @@ export async function GET(req: Request) {
   const step = searchParams.get("step");
   const result = searchParams.get("result");
 
-  let text = "Tes Kokologi Warna";
+  let text = "TES KOKOLOGI WARNA";
   let bg = "#0f172a";
 
   if (step !== null) {
-    text = `Soal ${Number(step) + 1}`;
+    text = `SOAL ${Number(step) + 1}`;
   }
 
   if (result) {
-    text = `HASIL: ${result.toUpperCase()}`;
+    text = `HASIL\n${result.toUpperCase()}`;
     bg = resultColor(result);
   }
 
@@ -32,8 +32,9 @@ export async function GET(req: Request) {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          fontSize: 56,
+          fontSize: 64,
           fontWeight: "bold",
+          textAlign: "center",
         },
       },
       text
@@ -42,18 +43,14 @@ export async function GET(req: Request) {
   );
 }
 
-function resultColor(color: string) {
-  const map: any = {
+function resultColor(color: string): string {
+  const map: Record<string, string> = {
     merah: "#dc2626",
     biru: "#2563eb",
     kuning: "#facc15",
     hitam: "#020617",
     putih: "#e5e7eb",
-    hijau: "#16a34a",
-    ungu: "#7c3aed",
-    oranye: "#ea580c",
-    coklat: "#92400e",
-    "abu-abu": "#64748b",
   };
-  return map[color] || "#0f172a";
+
+  return map[color] ?? "#0f172a";
 }

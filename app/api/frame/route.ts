@@ -1,7 +1,22 @@
-// =======================
-// DATA SOAL (15 SOAL)
-// =======================
-const QUESTIONS = [
+import { NextRequest, NextResponse } from "next/server";
+
+/* =========================
+   TYPES
+========================= */
+type Color = "merah" | "biru" | "kuning" | "hitam" | "putih";
+
+type FrameState = {
+  step: number;
+  score: Record<Color, number>;
+};
+
+/* =========================
+   QUESTIONS (15)
+========================= */
+const QUESTIONS: {
+  text: string;
+  options: { label: string; color: Color }[];
+}[] = [
   {
     text: "Saat menghadapi tekanan mendadak, kamu biasanya?",
     options: [
@@ -139,112 +154,83 @@ const QUESTIONS = [
   },
 ];
 
-// =======================
-// POST HANDLER
-// =======================
-export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({}));
+/* =========================
+   RESULT LOGIC
+========================= */
+function finalColor(score: Record<Color, number>): Color {
+  return (Object.entries(score) as [Color, number][])
+    .sort((a, b) => b[1] - a[1])[0][0];
+}
 
-  const state = body.state || {
+function resultText(color: Color): string {
+  switch (color) {
+    case "merah":
+      return "🔥 MERAH — Dominan, berani, pengambil kendali.";
+    case "biru":
+      return "🌊 BIRU — Logis, bijaksana, stabil.";
+    case "kuning":
+      return "🌞 KUNING — Kreatif, optimis, fleksibel.";
+    case "hitam":
+      return "🖤 HITAM — Mandiri, kuat, reflektif.";
+    case "putih":
+      return "🤍 PUTIH — Damai, seimbang, penenang.";
+  }
+}
+
+/* =========================
+   FRAME HELPER
+========================= */
+function frame(
+  buttons: string[],
+  state: FrameState,
+  imageUrl: string
+) {
+  return NextResponse.json({
+    version: "vNext",
+    image: imageUrl,
+    buttons: buttons.map((b) => ({ label: b, value: b })),
+    state,
+    actions: { ready: true }, // FIX SDK warning
+  });
+}
+
+/* =========================
+   POST
+========================= */
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+
+  const state: FrameState = body.state ?? {
     step: 0,
-    score: {
-      merah: 0,
-      biru: 0,
-      kuning: 0,
-      hitam: 0,
-      putih: 0,
-    },
+    score: { merah: 0, biru: 0, kuning: 0, hitam: 0, putih: 0 },
   };
 
-  const btn = body.untrustedData?.buttonIndex;
-  const current = QUESTIONS[state.step];
+  const btnIndex = Number(body.untrustedData?.buttonIndex ?? 0);
 
-  if (btn && current) {
-    const selected = current.options[btn - 1];
-    state.score[selected.color]++;
+  if (btnIndex > 0 && state.step < QUESTIONS.length) {
+    const selected = QUESTIONS[state.step].options[btnIndex - 1];
+    if (selected) state.score[selected.color]++;
     state.step++;
   }
 
   if (state.step >= QUESTIONS.length) {
-    return resultFrame(state);
+    const color = finalColor(state.score);
+
+    return frame(
+      ["Ulangi"],
+      {
+        step: 0,
+        score: { merah: 0, biru: 0, kuning: 0, hitam: 0, putih: 0 },
+      },
+      `/api/og?result=${color}`
+    );
   }
 
-  return questionFrame(state);
-}
-
-// =======================
-// FRAME SOAL
-// =======================
-function questionFrame(state: any) {
   const q = QUESTIONS[state.step];
-  const BASE_URL = "https://kokologi-frame1.vercel.app";
 
-  return htmlFrame(`
-   <meta property="fc:frame:image" content="${BASE_URL}/api/og?step=${state.step}" />
-    ${q.options
-      .map(
-        (o: any, i: number) =>
-          `<meta property="fc:frame:button:${i + 1}" content="${o.label}" />`
-      )
-      .join("")}
-    <meta property="fc:frame:post_url" content="${BASE_URL}/api/frame" />
-  `);
-}
-
-// =======================
-// FRAME HASIL
-// =======================
-function resultFrame(state: any) {
-  const result = getFinalColor(state.score);
-  const BASE_URL = "https://kokologi-frame1.vercel.app";
-  return htmlFrame(`
-    <meta property="fc:frame:image" content="${BASE_URL}/api/og?result=${result.color}" />
-
-  `);
-}
-
-// =======================
-// UTIL
-// =======================
-function htmlFrame(inner: string) {
-  return new Response(
-    `<!DOCTYPE html><html><head>
-      <meta property="fc:frame" content="vNext" />
-      <meta property="fc:frame:post_url" content="http://kokologi-frame1.vercel.app/api/frame" />
-      ${inner}
-    </head></html>`,
-    { headers: { "Content-Type": "text/html" } }
+  return frame(
+    q.options.map((o) => o.label),
+    state,
+    `/api/og?step=${state.step}`
   );
 }
-
-function getFinalColor(score: Record<string, number>) {
-  const sorted = Object.entries(score).sort(
-    (a, b) => (b[1] as number) - (a[1] as number)
-  );
-
-  const [c1, s1] = sorted[0] as [string, number];
-  const [c2, s2] = sorted[1] as [string, number];
-
-  // Dominan jelas
-  if (s1 - s2 >= 2) {
-    return { color: c1 };
-  }
-
-  const mix: Record<string, string> = {
-    "kuning-biru": "hijau",
-    "biru-kuning": "hijau",
-    "merah-biru": "ungu",
-    "biru-merah": "ungu",
-    "merah-kuning": "oranye",
-    "kuning-merah": "oranye",
-    "merah-hitam": "coklat",
-    "hitam-merah": "coklat",
-    "hitam-putih": "abu-abu",
-    "putih-hitam": "abu-abu",
-  };
-
-  return {
-    color: mix[`${c1}-${c2}`] || c1,
-  };
-}
-
