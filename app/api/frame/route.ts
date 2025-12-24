@@ -155,7 +155,7 @@ const QUESTIONS: {
 ];
 
 /* =========================
-   RESULT LOGIC
+   RESULT
 ========================= */
 function finalColor(score: Record<Color, number>): Color {
   return (Object.entries(score) as [Color, number][])
@@ -178,24 +178,7 @@ function resultText(color: Color): string {
 }
 
 /* =========================
-   FRAME HELPER
-========================= */
-function frame(
-  buttons: string[],
-  state: FrameState,
-  imageUrl: string
-) {
-  return NextResponse.json({
-    version: "vNext",
-    image: imageUrl,
-    buttons: buttons.map((b) => ({ label: b, value: b })),
-    state,
-    actions: { ready: true }, // FIX SDK warning
-  });
-}
-
-/* =========================
-   POST
+   POST (FRAME ENTRY)
 ========================= */
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -213,24 +196,36 @@ export async function POST(req: NextRequest) {
     state.step++;
   }
 
+  // === RESULT ===
   if (state.step >= QUESTIONS.length) {
     const color = finalColor(state.score);
-
-    return frame(
-      ["Ulangi"],
-      {
+    return NextResponse.json({
+      version: "vNext",
+      image: {
+        url: `https://kokologi-frame1.vercel.app/api/og?result=${color}`,
+      },
+      buttons: [{ label: "Ulangi", value: "reset" }],
+      state: {
         step: 0,
         score: { merah: 0, biru: 0, kuning: 0, hitam: 0, putih: 0 },
       },
-      `/api/og?result=${color}`
-    );
+      actions: { ready: true },
+    });
   }
 
+  // === QUESTION ===
   const q = QUESTIONS[state.step];
 
-  return frame(
-    q.options.map((o) => o.label),
+  return NextResponse.json({
+    version: "vNext",
+    image: {
+      url: `https://kokologi-frame1.vercel.app/api/og?step=${state.step}`,
+    },
+    buttons: q.options.map((o) => ({
+      label: o.label,
+      value: o.label,
+    })),
     state,
-    `/api/og?step=${state.step}`
-  );
+    actions: { ready: true },
+  });
 }
